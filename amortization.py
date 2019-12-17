@@ -82,24 +82,39 @@ def calculate_months(interest, monthly, balance):
     return months
 
 
+def _change_payment(args, month_date):
+    payment = args["monthly"]
+    if args["change_payment"]:
+        for change in args["change_payment"]:
+            if month_date == change:
+                payment = args["monthly"] = args["change_payment"][change]
+    return payment
+
+
+def _principal(args, month_date, interest, payment):
+    principal = args["monthly"] - interest
+
+    if args["extra"]:
+        for extra_month in args["extra"]:
+            if month_date == extra_month:
+                principal = args["extra"][extra_month] - interest
+                payment = args["extra"][extra_month]
+    return principal, interest, payment
+
+
 def amortization_schedule(months, args):
     month_balance = args["balance"]
     cur = datetime.date.today().replace(day=1)
     rows = []
     for period in range(1, months + 1):
-        interest = np.ipmt(args["interest"] / 12, period, months, month_balance)
-        payment = args["monthly"]
         month_date = (cur + datetime.timedelta(days=31 * period)).replace(day=1)
-        principal = args["monthly"] - interest
-        if args["change_payment"]:
-            for change in args["change_payment"]:
-                if month_date == change:
-                    payment = args["monthly"] = args["change_payment"][change]
-        if args["extra"]:
-            for extra_month in args["extra"]:
-                if month_date == extra_month:
-                    principal = args["extra"][extra_month] - interest
-                    payment = args["extra"][extra_month]
+
+        principal, interest, payment = _principal(
+            args,
+            month_date,
+            np.ipmt(args["interest"] / 12, period, months, month_balance),
+            _change_payment(args, month_date),
+        )
 
         month_balance = month_balance + principal
         rows.append(
@@ -119,7 +134,7 @@ def amortization_schedule(months, args):
 
 def main():
     args = parse_opts()
-    months = calculate_months(args["interest"], args['monthly'], args['balance'])
+    months = calculate_months(args["interest"], args["monthly"], args["balance"])
     with open(args["output"], "w") as outfile:
         writer = csv.writer(outfile)
         writer.writerow(["Interest", args["interest"]])
