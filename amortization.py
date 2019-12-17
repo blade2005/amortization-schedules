@@ -44,28 +44,34 @@ def parse_opts():
         default="amortization.csv",
     )
     parser.add_argument(
-        "--extra",
-        "-e",
-        action="append",
-        help="Extra payment",
-        type=json.loads
+        "--extra", "-e", action="append", help="Extra payment", type=json.loads
     )
     parser.add_argument(
         "--change-payment",
         "-c",
         action="append",
         help="Change Monthly payment amount",
-        type=json.loads
+        type=json.loads,
     )
     args = vars(parser.parse_args())
     if args["interest"] > 1:
         parser.error("Your interest rate should be between 0 and 1.")
     if args["monthly"] > 0:
         parser.error("Your monthly payment should be entered in the negative")
-    if args['extra']:
-        args['extra'] = {datetime.date.fromisoformat(extra_payment['month']): extra_payment['payment'] for extra_payment in args['extra']}
-    if args['change_payment']:
-        args['change_payment'] = {datetime.date.fromisoformat(extra_payment['month']): extra_payment['payment'] for extra_payment in args['change_payment']}
+    if args["extra"]:
+        args["extra"] = {
+            datetime.date.fromisoformat(extra_payment["month"]): extra_payment[
+                "payment"
+            ]
+            for extra_payment in args["extra"]
+        }
+    if args["change_payment"]:
+        args["change_payment"] = {
+            datetime.date.fromisoformat(extra_payment["month"]): extra_payment[
+                "payment"
+            ]
+            for extra_payment in args["change_payment"]
+        }
 
     return args
 
@@ -79,24 +85,23 @@ def main():
     rows = []
     for period in range(1, months + 1):
         interest = np.ipmt(args["interest"] / 12, period, months, month_balance)
-        payment = args['monthly']
+        payment = args["monthly"]
         month_date = (cur + datetime.timedelta(days=31 * period)).replace(day=1)
-        principal = args['monthly'] - interest
-        if args['change_payment']:
-            for change in args['change_payment']:
+        principal = args["monthly"] - interest
+        if args["change_payment"]:
+            for change in args["change_payment"]:
                 if month_date == change:
-                    payment = args['monthly'] = args['change_payment'][change]
-        if args['extra']:
-            for extra_month in args['extra']:
+                    payment = args["monthly"] = args["change_payment"][change]
+        if args["extra"]:
+            for extra_month in args["extra"]:
                 if month_date == extra_month:
-                    principal = args['extra'][extra_month] - interest
-                    payment = args['extra'][extra_month]
-
+                    principal = args["extra"][extra_month] - interest
+                    payment = args["extra"][extra_month]
 
         month_balance = month_balance + principal
         rows.append(
             [
-                '{}/{}'.format(month_date.year, month_date.month),
+                "{}/{}".format(month_date.year, month_date.month),
                 period,
                 payment,
                 interest.round(2),
