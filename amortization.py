@@ -76,10 +76,13 @@ def parse_opts():
     return args
 
 
-def main():
-    args = parse_opts()
-    months = math.ceil(np.nper(args["interest"] / 12, args["monthly"], args["balance"]))
+def calculate_months(interest, monthly, balance):
+    months = math.ceil(np.nper(interest / 12, monthly, balance))
     print("Your loan will take {} months to pay off.".format(months))
+    return months
+
+
+def amortization_schedule(months, args):
     month_balance = args["balance"]
     cur = datetime.date.today().replace(day=1)
     rows = []
@@ -111,6 +114,12 @@ def main():
         )
         if month_balance < 0:
             break
+    return rows
+
+
+def main():
+    args = parse_opts()
+    months = calculate_months(args["interest"], args['monthly'], args['balance'])
     with open(args["output"], "w") as outfile:
         writer = csv.writer(outfile)
         writer.writerow(["Interest", args["interest"]])
@@ -119,7 +128,7 @@ def main():
         writer.writerow(
             ["Date", "Period", "Payment", "Interest", "Principal", "Balance"]
         )
-        for row in rows:
+        for row in amortization_schedule(months, args):
             writer.writerow(row)
 
 
